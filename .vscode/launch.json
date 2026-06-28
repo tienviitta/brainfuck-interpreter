@@ -1,0 +1,50 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug brainfuck-interpreter",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=brainfuck-interpreter",
+          "--package=brainfuck-interpreter"
+        ],
+        "filter": {
+          "name": "brainfuck-interpreter",
+          "kind": "bin"
+        }
+      },
+      "sourceLanguages": [
+        "rust"
+      ],
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug brainfuck-interpreter (Max debug info)",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=brainfuck-interpreter",
+          "--package=brainfuck-interpreter"
+        ],
+        "filter": {
+          "name": "brainfuck-interpreter",
+          "kind": "bin"
+        }
+      },
+      "sourceLanguages": [
+        "rust"
+      ],
+      "env": {
+        "RUSTFLAGS": "-C debuginfo=2 -C opt-level=0 -C codegen-units=1"
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
