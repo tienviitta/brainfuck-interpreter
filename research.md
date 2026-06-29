@@ -1,7 +1,11 @@
 # Brainfuck Interpreter — Research Report
 
-**Date:** 2026-06-29  
+**Date:** 2026-06-29 (original analysis)  
 **Scope:** Full repository analysis, WASM web app failure investigation, and remediation plan.
+
+> **Origin:** This project extends the CLI Brainfuck interpreter from [Learn Rust Basics By Building a Brainfuck Interpreter](https://blog.sheerluck.dev/posts/learn-rust-basics-by-building-a-brainfuck-interpreter/) (Mrsheerluck [learning-rust](https://blog.sheerluck.dev/series/learning-rust/) series) into a WASM-backed **Brain Fog Visualizer** with step/run/reset, tape view, and execution highlighting.
+>
+> **Status (2026-06):** Phases 1–3 and deployment are complete. Sections below describing broken-on-load behaviour, missing `src/pkg`, and stale defaults are **historical** — kept for context. See [`README.md`](README.md) for current features and roadmap.
 
 ---
 
