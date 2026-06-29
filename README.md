@@ -1,69 +1,50 @@
-# brainfuck-interpreter
+# Brain Fog Visualizer
 
-## Debugging in VS Code (Rust + CodeLLDB)
+A Brainfuck visual debugger: step through programs and watch the memory tape, instruction pointer, and stdout update in real time. The execution engine is Rust compiled to WebAssembly; a small CLI runner lives in the same workspace.
 
-This project is configured for reliable Rust variable inspection (including `Vec` and `HashMap`) while debugging.
+## Prerequisites
 
-### Launch configurations
+- [Rust](https://rustup.rs/) (2024 edition for the workspace root crate)
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+- `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
+- [Node.js](https://nodejs.org/) 18+
 
-The debug profiles are in `.vscode/launch.json`:
+## Quick start
 
-- `Debug brainfuck-interpreter`
-- `Debug brainfuck-interpreter (Max debug info)`
-
-The max-debug profile sets:
-
-- `RUSTFLAGS=-C debuginfo=2 -C opt-level=0 -C codegen-units=1`
-- `sourceLanguages: ["rust"]`
-
-### Cargo debug-friendly profile
-
-`Cargo.toml` includes:
-
-```toml
-[profile.dev]
-opt-level = 0
-debug = 2
-codegen-units = 1
+```bash
+npm install
+npm run dev
 ```
 
-These settings reduce optimization and increase debug symbol quality, which improves visibility of local variables and container internals.
+`npm run dev` runs `wasm-build` automatically via the `predev` hook, so a fresh clone works without an extra build step.
 
-### How to use
+Open [http://localhost:5173](http://localhost:5173).
 
-1. Open **Run and Debug** in VS Code.
-2. Select `Debug brainfuck-interpreter (Max debug info)`.
-3. Set breakpoints and start debugging.
-4. Inspect values in **Variables** and **Watch**.
+## Scripts
 
-### Troubleshooting checks (Variables empty or incomplete)
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Build WASM (if needed) and start the Vite dev server |
+| `npm run wasm-build` | Compile `core-wasm` to `src/pkg/` |
+| `npm run build` | Production build → `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Lint JS/JSX with Oxlint |
+| `cargo run` | Run the CLI Hello World program |
 
-Run these checks in order:
+## Project layout
 
-1. Check the selected launch profile is **Debug brainfuck-interpreter (Max debug info)**.
-2. Check `.vscode/launch.json` contains:
-	- `sourceLanguages: ["rust"]`
-	- `RUSTFLAGS=-C debuginfo=2 -C opt-level=0 -C codegen-units=1`
-3. Check `Cargo.toml` contains this dev profile:
-	- `[profile.dev]`
-	- `opt-level = 0`
-	- `debug = 2`
-	- `codegen-units = 1`
-4. Check you are breaking after variable initialization (not before assignment).
-5. Rebuild from clean to remove stale artifacts:
-	- `cargo clean && cargo build`
-6. Check required extensions are installed and enabled:
-	- `vadimcn.vscode-lldb`
-	- `rust-lang.rust-analyzer`
-7. If `HashMap` display still looks odd, add watch expressions like:
-	- `scores.len()`
-	- `scores.get("alice")`
-	- `numbers.len()`
-	- `numbers[0]`
+```
+src/main.rs          CLI interpreter (hardcoded Hello World)
+core-wasm/           WASM steppable VM (wasm-bindgen)
+src/App.jsx          React visualizer UI
+src/pkg/             Generated WASM bindings (gitignored; built by wasm-pack)
+```
 
-### References
+## Default program
 
-- CodeLLDB manual: https://github.com/vadimcn/codelldb/blob/master/MANUAL.md
-- VS Code launch config docs: https://code.visualstudio.com/docs/debugtest/debugging-configuration
-- Cargo profiles: https://doc.rust-lang.org/cargo/reference/profiles.html
-- Rust codegen options: https://doc.rust-lang.org/rustc/codegen-options/index.html
+The web app ships with the classic Brainfuck Hello World program — the same string used by `cargo run` in `src/main.rs`. It prints `Hello World!` and terminates cleanly.
+
+## Notes
+
+- WASM artifacts in `src/pkg/` are generated and not committed. They are rebuilt by `predev`, `build`, and `wasm-build`.
+- See `research.md` for architecture details and `BF.md` for Rust debugging in VS Code.
