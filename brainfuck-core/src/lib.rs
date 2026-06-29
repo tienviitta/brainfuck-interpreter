@@ -161,10 +161,40 @@ impl BrainfuckVm {
     pub fn is_finished(&self) -> bool {
         self.pc >= self.program.len()
     }
+
+    pub fn program(&self) -> &str {
+        // Filtered program bytes are always ASCII Brainfuck operators.
+        std::str::from_utf8(&self.program).expect("program bytes are ASCII")
+    }
+
+    pub fn opcode_at(&self, index: usize) -> Option<u8> {
+        self.program.get(index).copied()
+    }
+
+    pub fn current_opcode(&self) -> Option<u8> {
+        self.opcode_at(self.pc)
+    }
 }
 
 pub const HELLO_WORLD: &str =
     "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.";
+
+/// Prints `Hello {input} World!` — expects two input characters (default `BF`).
+pub const HELLO_BF_WORLD: &str = "\
+>++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>++++++++++++++++++++++++++++++++.,.,.\
+>++++++++++++++++++++++++++++++++.\
+>+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.\
+>+++++++++++++++++++++++++++++++++.\
+>++++++++++.";
 
 #[cfg(test)]
 mod tests {
@@ -182,6 +212,32 @@ mod tests {
         let map = build_bracket_map(&program);
         assert_eq!(map[1], 3);
         assert_eq!(map[3], 1);
+    }
+
+    #[test]
+    fn hello_bf_world_output() {
+        let mut vm = BrainfuckVm::new(HELLO_BF_WORLD);
+        vm.set_input("BF");
+        vm.run_to_completion();
+        assert_eq!(vm.output(), "Hello BF World!\n");
+    }
+
+    #[test]
+    fn current_opcode_tracks_pc() {
+        let mut vm = BrainfuckVm::new("+.");
+        assert_eq!(vm.current_opcode(), Some(b'+'));
+        vm.step();
+        assert_eq!(vm.current_opcode(), Some(b'.'));
+        vm.step();
+        assert_eq!(vm.current_opcode(), None);
+    }
+
+    #[test]
+    fn opcode_at_index() {
+        let vm = BrainfuckVm::new("+-");
+        assert_eq!(vm.opcode_at(0), Some(b'+'));
+        assert_eq!(vm.opcode_at(1), Some(b'-'));
+        assert_eq!(vm.opcode_at(2), None);
     }
 
     #[test]

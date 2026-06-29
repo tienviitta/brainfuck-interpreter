@@ -8,6 +8,7 @@
     "dev": "vite",
     "wasm-build": "cd core-wasm && wasm-pack build --target web --out-dir ../src/pkg",
     "build": "npm run wasm-build && vite build",
+    "build:web": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },

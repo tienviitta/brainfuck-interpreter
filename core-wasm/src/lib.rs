@@ -27,6 +27,10 @@ impl BrainfuckEngine {
         self.vm.limit_reached()
     }
 
+    pub fn is_finished(&self) -> bool {
+        self.vm.is_finished()
+    }
+
     pub fn get_dp(&self) -> usize {
         self.vm.dp()
     }
@@ -37,6 +41,30 @@ impl BrainfuckEngine {
 
     pub fn get_output(&self) -> String {
         self.vm.output().to_string()
+    }
+
+    pub fn get_program(&self) -> String {
+        self.vm.program().to_string()
+    }
+
+    pub fn get_program_len(&self) -> usize {
+        self.vm.program_len()
+    }
+
+    pub fn get_opcode_at(&self, index: usize) -> u8 {
+        self.vm.opcode_at(index).unwrap_or(0)
+    }
+
+    pub fn has_opcode_at(&self, index: usize) -> bool {
+        self.vm.opcode_at(index).is_some()
+    }
+
+    pub fn get_current_opcode(&self) -> u8 {
+        self.vm.current_opcode().unwrap_or(0)
+    }
+
+    pub fn has_current_opcode(&self) -> bool {
+        self.vm.current_opcode().is_some()
     }
 
     pub fn get_tape_cell(&self, index: usize) -> u8 {

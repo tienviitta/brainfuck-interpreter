@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-`npm run dev` runs `wasm-build` automatically via the `predev` hook, so a fresh clone works without an extra build step.
+`npm run dev` runs `wasm-build` automatically via the `predev` hook.
 
 Open [http://localhost:5173](http://localhost:5173).
 
@@ -24,33 +24,69 @@ Open [http://localhost:5173](http://localhost:5173).
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Build WASM (if needed) and start the Vite dev server |
+| `npm run dev` | Build WASM and start the Vite dev server |
 | `npm run wasm-build` | Compile `core-wasm` to `src/pkg/` |
-| `npm run build` | Production build → `dist/` |
+| `npm run build` | Full build (WASM + Vite) → `dist/` |
+| `npm run build:web` | Vite-only build (uses committed `src/pkg/`) |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Lint JS/JSX with Oxlint |
-| `cargo run` | Run the CLI Hello World program |
+| `cargo test -p brainfuck-core` | VM unit tests |
+| `cargo run` | CLI Hello World |
+
+## Default program
+
+The web app runs **Hello BF World**: it reads two characters from **Program Input** (default `BF`) and prints `Hello BF World!`. Change the input field to personalize the greeting.
+
+## Deploy (Vercel recommended)
+
+This project is a static Vite SPA with a bundled `.wasm` file. **Vercel** is the better fit here: zero-config Vite support, fast global CDN, and simple GitHub integration. Netlify works equally well; `netlify.toml` is included.
+
+### Why Vercel over Netlify?
+
+| | Vercel | Netlify |
+|---|--------|---------|
+| Vite detection | Excellent (native) | Good |
+| WASM MIME types | Handled automatically | Needs `netlify.toml` headers (included) |
+| Free tier | Generous for static sites | Generous for static sites |
+| Setup | Import repo → deploy | Import repo → deploy |
+
+Both platforms lack Rust/wasm-pack in their default build image. This repo **commits `src/pkg/`** so deploy builds only run `npm run build:web` (no Rust toolchain required).
+
+### Vercel
+
+1. Import the GitHub repo at [vercel.com](https://vercel.com)
+2. Framework preset: **Vite** (or use the included `vercel.json`)
+3. Build command: `npm run build:web`
+4. Output directory: `dist`
+5. Deploy
+
+Or with the CLI: `npx vercel --prod`
+
+### Netlify
+
+1. Import the repo at [netlify.com](https://netlify.com)
+2. `netlify.toml` sets build command and WASM headers automatically
+3. Deploy
+
+### After changing Rust code
+
+```bash
+npm run wasm-build   # regenerate src/pkg/
+git add src/pkg/
+npm run build        # verify locally
+```
 
 ## Project layout
 
 ```
-src/main.rs          CLI interpreter (Hello World via brainfuck-core)
-brainfuck-core/      Shared Brainfuck VM (used by CLI and WASM)
+src/main.rs          CLI interpreter
+brainfuck-core/      Shared Brainfuck VM + tests
 core-wasm/           WASM bindings (wasm-bindgen)
 src/App.jsx          React visualizer UI
-src/pkg/             Generated WASM bindings (gitignored; built by wasm-pack)
+src/pkg/             WASM bindings (committed for deploy)
 ```
-
-## Default program
-
-The web app ships with the classic Brainfuck Hello World program — the same string as `brainfuck_core::HELLO_WORLD` in `brainfuck-core/`. It prints `Hello World!` and terminates cleanly.
-
-## Program input
-
-Use the **Program Input** field in the UI to supply characters consumed by `,` instructions.
 
 ## Notes
 
-- WASM artifacts in `src/pkg/` are generated and not committed. They are rebuilt by `predev`, `build`, and `wasm-build`.
 - Run `cargo test -p brainfuck-core` for VM unit tests.
 - See `research.md` for architecture details and `BF.md` for Rust debugging in VS Code.
