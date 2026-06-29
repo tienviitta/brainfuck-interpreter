@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Substack paste source — Learning Rust by Stepping Through Brainfuck</title>
+  <style>
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 680px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.6;
+      color: #1a1a1a;
+    }
+    h2 { font-size: 1.35rem; margin-top: 2rem; }
+    p { margin: 1rem 0; }
+    ul { margin: 1rem 0; padding-left: 1.5rem; }
+    li { margin: 0.35rem 0; }
+    a { color: #ff6719; }
+    code {
+      font-family: ui-monospace, monospace;
+      font-size: 0.9em;
+      background: #f4f4f4;
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 1rem;
+      overflow-x: auto;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .caption { font-style: italic; color: #555; font-size: 0.95rem; }
+    .note {
+      background: #fff8f0;
+      border: 1px solid #ff6719;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      border-radius: 6px;
+      font-family: system-ui, sans-serif;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="note">
+  <strong>How to use:</strong> Select everything below this box (click first paragraph, then Ctrl+A). Copy (Ctrl+C). In Substack editor, delete the code block, click in the empty body, paste (Ctrl+V). Then upload <code>bf.png</code> where indicated. Do not paste into a Markdown or Code block.
+</div>
+
+<p>If you want to learn Rust, you do not need to start with async web servers or blockchain nodes. Sometimes the best teacher is the smallest possible program.</p>
+
+<p>That is how I ended up building <strong>Brain Fog Visualizer</strong>: a step-by-step Brainfuck debugger that runs in the browser, backed by Rust compiled to WebAssembly. It started as a CLI exercise and grew into a small multi-crate workspace — and along the way it surfaced almost every Rust concept a beginner needs to internalize.</p>
+
+<p><strong>Live demo:</strong> <a href="https://brainfuck-interpreter-amber.vercel.app">brainfuck-interpreter-amber.vercel.app</a></p>
+
+<h2>Why Brainfuck?</h2>
+
+<p>Brainfuck is an esoteric language with eight commands: <code>&gt;&lt;+-.,[]</code>. It has a tape of byte cells, a data pointer, and a program counter. That is it.</p>
+
+<p>For a Rust learner, that minimalism is a feature. You are not fighting frameworks or syntax sugar. You are implementing a virtual machine: parsing, control flow, state, and I/O. The problem is small enough to finish in a weekend, but rich enough to force real design decisions.</p>
+
+<p>I began with <a href="https://blog.sheerluck.dev/posts/learn-rust-basics-by-building-a-brainfuck-interpreter/">Learn Rust Basics By Building a Brainfuck Interpreter</a> by Mrsheerluck — part of the excellent <a href="https://blog.sheerluck.dev/series/learning-rust/">learning-rust</a> series. That tutorial walks through Cargo, pattern matching, and a classic <code>while</code> loop that runs a program to completion. Solid foundation. I wanted to go further.</p>
+
+<h2>From CLI to shared library</h2>
+
+<p>The tutorial's CLI runner is about sixty lines: hardcode a Hello World program, call <code>run_to_completion()</code>, print stdout. Done.</p>
+
+<p>My first refactor was extracting the VM into <strong>brainfuck-core</strong>, a shared crate used by both the CLI and the browser target. That single move taught more Rust than the interpreter itself:</p>
+
+<ul>
+  <li><strong>Modules and workspaces</strong> — a root <code>Cargo.toml</code> with members <code>brainfuck-core</code>, <code>core-wasm</code>, and the CLI binary</li>
+  <li><strong>Public API design</strong> — what to expose and what to keep internal</li>
+  <li><strong>Enums for control flow</strong> — <code>StepOutcome</code> instead of scattering boolean flags</li>
+  <li><strong>Safe indexing</strong> — <code>get</code> with <code>unwrap_or</code> rather than panicking on out-of-bounds access</li>
+  <li><strong>Unit tests</strong> — <code>cargo test</code> on the core crate covers parsing, bracket maps, I/O, and golden output</li>
+</ul>
+
+<p>The CLI binary shrank to three lines:</p>
+
+<pre><code>let mut vm = brainfuck_core::BrainfuckVm::new(brainfuck_core::HELLO_WORLD);
+vm.run_to_completion();
+print!("{}", vm.output());</code></pre>
+
+<p>One VM, two consumers. That is the pattern you will use in real Rust projects.</p>
+
+<h2>The stepping API: designing for the browser</h2>
+
+<p>A CLI runs to completion. A visual debugger runs <strong>one instruction at a time</strong>.</p>
+
+<p>That meant rethinking the execution loop. Instead of a <code>while</code> that never yields, <code>step()</code> executes exactly one opcode and returns an outcome. The UI calls <code>step()</code> on every button click — or on a timer when Run is active.</p>
+
+<p>The WASM bridge in <strong>core-wasm</strong> is a thin <code>wasm-bindgen</code> wrapper around the shared VM. <code>BrainfuckEngine</code> is a Rust struct allocated on the WASM heap; <code>wasm-bindgen</code> generates the glue code that lets React construct, mutate, and eventually free it. Getting that lifecycle right — especially under React StrictMode — was its own lesson in debugging cross-language boundaries.</p>
+
+<h2>What the visualizer shows</h2>
+
+<p><em>[Upload bf.png here using Substack's Image button]</em></p>
+
+<p class="caption">Figure: Brain Fog Visualizer running in the browser. The Rust VM executes one Brainfuck instruction per step; React renders tape, PC, DP, and stdout in real time.</p>
+
+<p>The web app is the main deliverable. It renders the VM state that Rust keeps hidden in a normal program:</p>
+
+<ul>
+  <li><strong>Program counter (PC)</strong> and <strong>data pointer (DP)</strong> in a status bar</li>
+  <li>An <strong>execution view</strong> — a sliding window over the filtered opcode stream, with the current instruction highlighted</li>
+  <li>A <strong>memory tape</strong> — 32 visible cells from a 30,000-cell array, with ASCII labels and a horizontal slider</li>
+  <li><strong>Program input</strong> for the <code>,</code> opcode and a <strong>stdout panel</strong> for <code>.</code></li>
+</ul>
+
+<p>The default demo uses nested <code>[&gt;…&lt;-]</code> loops to set cell values efficiently, then reads two characters from the input field (default <code>BF</code>) and prints <code>Hello BF World!</code>. Change the input, change the greeting.</p>
+
+<h2>Rust concepts this project covers</h2>
+
+<ul>
+  <li><strong>Ownership and borrowing</strong> — <code>BrainfuckVm</code> holds a tape vector and output string</li>
+  <li><strong>Pattern matching</strong> — opcode dispatch in <code>step()</code> via <code>match</code></li>
+  <li><strong>Error handling without exceptions</strong> — <code>Option</code> for out-of-range reads; <code>StepOutcome</code> enum for execution state</li>
+  <li><strong>Wrapping arithmetic</strong> — <code>wrapping_add</code> and <code>wrapping_sub</code> on tape cells</li>
+  <li><strong>Precomputation</strong> — bracket-map build for O(1) loop jumps</li>
+  <li><strong>Cargo workspaces</strong> — shared core consumed by CLI and WASM crate</li>
+  <li><strong>FFI via WASM</strong> — <code>wasm-bindgen</code> exposes a Rust API to JavaScript</li>
+  <li><strong>Testing</strong> — unit tests in the core crate; golden-output assertions for Hello World</li>
+</ul>
+
+<p>You will not find async, traits, or macros here — and that is intentional. This project is a foundation layer.</p>
+
+<h2>Build pipeline: Rust in the browser</h2>
+
+<p>The toolchain is straightforward:</p>
+
+<ol>
+  <li><code>wasm-pack build</code> compiles <code>core-wasm</code> to generated JS glue plus a WASM binary</li>
+  <li>Vite bundles the React app and WASM asset</li>
+  <li><code>npm run dev</code> runs a <code>predev</code> hook that rebuilds WASM automatically</li>
+</ol>
+
+<p>Deploying to Vercel does not include Rust in the build environment, so the repo commits the generated WASM bindings and uses a web-only build for production.</p>
+
+<h2>Lessons that stuck</h2>
+
+<p><strong>Share logic early.</strong> Duplicating the VM in CLI and WASM led to semantic drift. One <code>brainfuck-core</code> crate eliminated that.</p>
+
+<p><strong>Design APIs for your slowest consumer.</strong> The browser needs one step per frame; the CLI needs <code>run_to_completion()</code>. Both call the same <code>step()</code> internally.</p>
+
+<p><strong>Test the core, not the glue.</strong> Eleven unit tests in <code>brainfuck-core</code> catch regressions without spinning up a browser.</p>
+
+<p><strong>Cross-language lifecycle is subtle.</strong> React effects, WASM cleanup, and StrictMode double-mounting can produce errors that look like Rust bugs but are really JavaScript timing issues.</p>
+
+<h2>Try it yourself</h2>
+
+<ul>
+  <li><strong>Play with the demo:</strong> <a href="https://brainfuck-interpreter-amber.vercel.app">brainfuck-interpreter-amber.vercel.app</a></li>
+  <li><strong>Source:</strong> <a href="https://github.com/tienviitta/brainfuck-interpreter">github.com/tienviitta/brainfuck-interpreter</a></li>
+  <li><strong>Tutorial:</strong> <a href="https://blog.sheerluck.dev/posts/learn-rust-basics-by-building-a-brainfuck-interpreter/">Mrsheerluck's Brainfuck tutorial</a></li>
+</ul>
+
+<p>Clone, run <code>npm install &amp;&amp; npm run dev</code>, and step through a program instruction by instruction.</p>
+
+<h2>What is next</h2>
+
+<p>The roadmap includes adjustable run speed, example program presets, keyboard shortcuts, and CI that runs <code>cargo test</code> alongside the Vite build. The core is solid; the polish is incremental.</p>
+
+<p>If you are learning Rust and looking for a project that is small, completable, and genuinely extensible — Brainfuck is underrated. Eight commands, one tape, and a path from <code>cargo run</code> to WASM in the browser.</p>
+
+<p><em>MIT licensed. Built while learning Rust — bugs, refactors, and WASM lifecycle lessons included.</em></p>
+
+</body>
+</html>
