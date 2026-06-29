@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* 1. Global Reset for our Dark Theme */
+body {
+  background-color: #121212; /* Rich dark-mode background */
+  color: #d1d5db; /* Gray-300 default text */
+  margin: 0;
+  padding: 0;
+}
+
+/* 2. Utility to hide scrollbars on the Memory Tape ribbon */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
