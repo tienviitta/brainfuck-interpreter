@@ -34,17 +34,23 @@ Open [http://localhost:5173](http://localhost:5173).
 ## Project layout
 
 ```
-src/main.rs          CLI interpreter (hardcoded Hello World)
-core-wasm/           WASM steppable VM (wasm-bindgen)
+src/main.rs          CLI interpreter (Hello World via brainfuck-core)
+brainfuck-core/      Shared Brainfuck VM (used by CLI and WASM)
+core-wasm/           WASM bindings (wasm-bindgen)
 src/App.jsx          React visualizer UI
 src/pkg/             Generated WASM bindings (gitignored; built by wasm-pack)
 ```
 
 ## Default program
 
-The web app ships with the classic Brainfuck Hello World program — the same string used by `cargo run` in `src/main.rs`. It prints `Hello World!` and terminates cleanly.
+The web app ships with the classic Brainfuck Hello World program — the same string as `brainfuck_core::HELLO_WORLD` in `brainfuck-core/`. It prints `Hello World!` and terminates cleanly.
+
+## Program input
+
+Use the **Program Input** field in the UI to supply characters consumed by `,` instructions.
 
 ## Notes
 
 - WASM artifacts in `src/pkg/` are generated and not committed. They are rebuilt by `predev`, `build`, and `wasm-build`.
+- Run `cargo test -p brainfuck-core` for VM unit tests.
 - See `research.md` for architecture details and `BF.md` for Rust debugging in VS Code.

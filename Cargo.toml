@@ -4,8 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+brainfuck-core = { path = "brainfuck-core" }
 
 [profile.dev]
 opt-level = 0
 debug = 2
 codegen-units = 1
+
+[workspace]
+members = [
+    ".",
+    "brainfuck-core",
+    "core-wasm",
+]
