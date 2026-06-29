@@ -90,3 +90,7 @@ src/pkg/             WASM bindings (committed for deploy)
 
 - Run `cargo test -p brainfuck-core` for VM unit tests.
 - See `research.md` for architecture details and `BF.md` for Rust debugging in VS Code.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
